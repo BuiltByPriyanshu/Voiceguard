@@ -57,14 +57,28 @@ python -m src.device   # should print mps
 
 ## Training + evaluation (cloud)
 
-See `notebooks/train_kaggle.ipynb`. Summary:
-```
-python -m src.train --protocol <train.trn.txt> --audio-dir <flac_dir> \
-  --val-protocol <dev.trl.txt> --val-audio-dir <flac_dir>
+See `notebooks/train_kaggle.ipynb`. Two training paths exist:
 
-python -m src.eval_eer --protocol <unseen_protocol> --audio-dir <unseen_audio> \
+**Fast path (used tonight):** train only the classifier head on precomputed
+768-dim wav2vec2 embeddings from the Kaggle dataset
+[`eminkorkut/deepfakevoice-wac2vec-4datasets`](https://www.kaggle.com/datasets/eminkorkut)
+(ASVspoof 2019/2021, In-the-Wild, DEEP-VOICE, pre-segmented into 2s clips).
+No raw audio, no SSL forward pass -- trains in minutes. The embedding
+dimension (768) matches `facebook/wav2vec2-base` (`config.SSL_MODEL_NAME`),
+which is what `src/infer.py` uses at inference time, so train-time and
+inference-time features line up.
+```
+python -m src.train_embeddings --parquet <ASVspoof2019_train_wav2vec.parquet>
+
+python -m src.eval_eer_embeddings --parquet <ASVspoof2021_test_wav2vec.parquet> \
   --dataset-name ASVspoof2021-DF
 ```
+
+**Raw-audio path (`src/train.py` / `src/eval_eer.py`):** the original
+protocol-file + `.flac` pipeline, kept for completeness / future retraining
+(e.g. swapping in multilingual XLS-R) if raw ASVspoof audio gets attached
+instead of the precomputed embeddings.
+
 Current headline EER: see `artifacts/metrics.json` (filled in after tonight's
 training run).
 

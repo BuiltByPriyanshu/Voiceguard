@@ -13,11 +13,27 @@ import os
 import glob
 
 import numpy as np
+import pandas as pd
 import soundfile as sf
 import torch
 from torch.utils.data import Dataset
 
 from config import SAMPLE_RATE, CLIP_SECONDS, LABEL_BONAFIDE, LABEL_SPOOF
+
+EMBEDDING_LABEL_MAP = {
+    "bonafide": LABEL_BONAFIDE, "real": LABEL_BONAFIDE,
+    "spoof": LABEL_SPOOF, "fake": LABEL_SPOOF,
+}
+
+
+def load_embedding_parquet(path: str):
+    """Load a precomputed-embedding parquet (emb_0..emb_N columns + a
+    real/fake or bonafide/spoof `label` column) into (X, y) tensors."""
+    df = pd.read_parquet(path)
+    emb_cols = [c for c in df.columns if c.startswith("emb_")]
+    X = torch.tensor(df[emb_cols].values, dtype=torch.float32)
+    y = torch.tensor(df["label"].str.lower().map(EMBEDDING_LABEL_MAP).values, dtype=torch.long)
+    return X, y
 
 try:
     import torchaudio

@@ -26,9 +26,17 @@ HOP_SECONDS = 1.0             # streaming inference hop
 EMA_ALPHA = 0.6               # running risk score smoothing
 
 # --- Model -----------------------------------------------------------
-SSL_MODEL_NAME = "facebook/wav2vec2-xls-r-300m"   # multilingual front-end
-# Lighter fallback if compute/time is tight tonight:
-SSL_MODEL_NAME_LIGHT = "facebook/wav2vec2-base"
+# Matched to the precomputed-embedding dataset used for tonight's training
+# (eminkorkut/deepfakevoice-wac2vec-4datasets: 768-dim wav2vec2 embeddings,
+# 2s segments, mean-pooled) -- the head is trained on those embeddings, so
+# inference must extract features the same way, hence this must stay
+# wav2vec2-base (hidden_size=768), not XLS-R (1024) or wav2vec2-large (1024).
+SSL_MODEL_NAME = "facebook/wav2vec2-base"
+# Multilingual front-end -- NOT used tonight (would mismatch the precomputed
+# training embeddings) but worth revisiting post-hackathon for Indian-accent
+# robustness if retraining from raw audio becomes an option.
+SSL_MODEL_NAME_XLSR = "facebook/wav2vec2-xls-r-300m"
+EMBEDDING_DIM = 768   # matches the wav2vec2-base hidden size / precomputed embedding width
 FREEZE_SSL = True
 HIDDEN_DIM = 256
 NUM_EPOCHS = 3

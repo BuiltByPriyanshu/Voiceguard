@@ -24,7 +24,11 @@ class RiskEngine:
                  win=WINDOW_SECONDS, hop=HOP_SECONDS, sr=SAMPLE_RATE, ema=EMA_ALPHA):
         self.device = get_device()
         self.model = VoiceGuardNet(ssl_name).to(self.device).eval()
-        self.model.load_state_dict(torch.load(ckpt, map_location=self.device))
+        # strict=False: tonight's checkpoint is head-only (trained on
+        # precomputed embeddings via src/train_embeddings.py), so only the
+        # `head.*` keys match here -- the SSL backbone keeps its pretrained
+        # weights from `ssl_name`, loaded above.
+        self.model.load_state_dict(torch.load(ckpt, map_location=self.device), strict=False)
         self.win = int(win * sr)
         self.hop = int(hop * sr)
         self.sr = sr
