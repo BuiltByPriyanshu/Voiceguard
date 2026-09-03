@@ -11,4 +11,9 @@ scikit-learn
 numpy
 pandas
 tqdm
-TTS                # Coqui XTTS for demo-clip generation
+# TTS is intentionally NOT here: the original Coqui `TTS` PyPI package caps
+# out at Python <3.12 and won't resolve on newer Kaggle runtimes, and putting
+# it in this file blocks the whole `pip install -r` (nothing installs if one
+# line fails to resolve). Install it separately, right before demo-clip
+# generation, via the community-maintained fork:
+#   pip install coqui-tts
