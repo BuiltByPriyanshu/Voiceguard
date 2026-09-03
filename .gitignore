@@ -1,0 +1,22 @@
+# Large binaries -> Google Drive, not git
+artifacts/*.pth
+artifacts/*.ckpt
+demo_clips/*.wav
+*.ckpt
+*.pth
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Env
+.env

@@ -1,0 +1,14 @@
+# Cloud training environment (Kaggle / Colab, CUDA)
+# Note: install latest stable torch/torchaudio first, smoke-test, then pin exact
+# versions once confirmed working in the runtime.
+torch
+torchaudio
+transformers
+datasets
+librosa
+soundfile
+scikit-learn
+numpy
+pandas
+tqdm
+TTS                # Coqui XTTS for demo-clip generation

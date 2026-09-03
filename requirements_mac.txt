@@ -1,0 +1,14 @@
+# Mac inference + app environment (Apple Silicon, MPS)
+# Do NOT add fairseq, pyaudio, or portaudio here -- mic capture happens in the
+# browser via the Web Audio API, and HF transformers replaces fairseq.
+torch              # official wheels support MPS on Apple Silicon
+torchaudio
+transformers
+librosa
+soundfile
+scikit-learn
+numpy
+fastapi
+uvicorn
+websockets
+python-multipart
