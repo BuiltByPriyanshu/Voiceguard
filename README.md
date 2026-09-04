@@ -98,16 +98,34 @@ uvicorn backend.app:app --reload
 
 ### API contract
 
+VoiceGuard is a voice **trust / interaction-risk** system, not just a voice
+detector: `voice_authenticity` (the wav2vec2 `RiskEngine`'s evidence) and
+`context_risk` (caller/transaction context) fuse into one `interaction_risk`
+— see `src/risk_fusion.py` and `HANDOFF.md` for the architecture. `verdict`
+describes the voice alone; `alert`/`decision` describe the fused
+interaction, and the two can disagree on purpose (e.g. a genuine voice in
+a risky context still raises interaction risk).
+
 - `GET /config` → `{"threshold": int, "high_value_threshold": int}`
 - `POST /config` → body `{"threshold": int}` to update
+- `GET /context` → `{"known_contact": bool, "transaction_value": "none"|"low"|"medium"|"high"}`
+- `POST /context` → body with either/both fields to update
 - `POST /analyze` (multipart file) →
-  `{"risk": 0-100, "verdict": "genuine"|"synthetic", "alert": bool, "reason": str|null, "per_window": [int, ...]}`
+  ```json
+  {"voice_authenticity": 0-100, "context_risk": 0-100, "interaction_risk": 0-100,
+   "decision": {"band": str, "action": str},
+   "verdict": "genuine"|"synthetic", "alert": bool, "reason": str|null,
+   "per_window": [int, ...]}
+  ```
 - `WS /stream` — client sends raw 16kHz mono PCM16 chunks as binary frames;
-  server replies once per hop with
-  `{"risk": 0-100, "alert": bool, "reason": str|null}`
+  server replies once per hop with the same shape as `/analyze` minus
+  `per_window`
 
-Pre-transaction warning rule: if `risk >= threshold`, `alert=true` and
+Pre-transaction warning rule: if `interaction_risk >= threshold`,
+`alert=true` and
 `reason="Likely synthetic voice — recommend call-back / MFA before approving."`
+`decision.band` gives a finer 4-level policy (`continue` / `passive_warning`
+/ `verify` / `intervene`) regardless of `alert`.
 
 Mic capture happens **in the browser** via the Web Audio API — the backend
 never touches `pyaudio`/`portaudio`, so there's nothing extra to install on

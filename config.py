@@ -56,6 +56,39 @@ ALERT_REASON = (
     "Likely synthetic voice — recommend call-back / MFA before approving."
 )
 
+# --- Context / risk fusion (multi-signal architecture) ------------------
+# Voice authenticity (the wav2vec2 detector's spoof probability) is one
+# evidence source; call/transaction context is another. A call can be
+# low-risk on voice alone but still risky in context (unknown caller +
+# high-value transfer) -- fusing the two answers "how risky is this
+# INTERACTION", which is a different question from "is this VOICE fake".
+# See HANDOFF.md for the architecture writeup this implements.
+#
+# These are deliberately simple, hand-picked POLICY numbers for the
+# prototype, not learned or scientifically validated constants -- a real
+# deployment would tune or learn them from labeled fraud outcomes.
+
+# Context risk is an ADDITIVE bump on top of voice authenticity, never a
+# dilution: a confidently-flagged synthetic voice must stay flagged
+# regardless of context, but a genuine-sounding voice in a risky context
+# should still raise the interaction risk.
+CONTEXT_UNKNOWN_CALLER_RISK = 20
+TRANSACTION_VALUE_RISK = {
+    "none": 0,
+    "low": 10,
+    "medium": 25,
+    "high": 45,
+}
+
+# Decision policy bands: (upper_bound_exclusive, band_name, recommended_action).
+# The interaction risk falls into the first band whose upper bound it's below.
+DECISION_BANDS = [
+    (30, "continue", "Continue normally."),
+    (60, "passive_warning", "Passive warning — enhanced monitoring recommended."),
+    (80, "verify", "Recommend secondary verification before proceeding."),
+    (101, "intervene", "Strong warning — require call-back / MFA before approving."),
+]
+
 # --- Labels -----------------------------------------------------------
 LABEL_BONAFIDE = 0
 LABEL_SPOOF = 1

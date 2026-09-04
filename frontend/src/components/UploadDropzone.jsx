@@ -63,7 +63,7 @@ export default function UploadDropzone() {
       {result && (
         <div className="upload-result">
           <div className={`risk-number${result.alert ? " alert" : ""}`} style={{ fontSize: 96 }}>
-            {result.risk}
+            {result.interaction_risk}
             <span className="risk-scale">/100</span>
           </div>
           <div className="verdict-row" style={{ justifyContent: "flex-start", marginTop: 8 }}>
@@ -71,13 +71,18 @@ export default function UploadDropzone() {
               {result.verdict === "synthetic" ? "Likely synthetic" : "Genuine"}
             </span>
           </div>
+          <div className="decision-band">{result.decision?.action}</div>
+          <div className="voice-authenticity-row" style={{ marginTop: 12 }}>
+            <span className="label">Voice authenticity</span>
+            <span className="voice-authenticity-value">{result.voice_authenticity}</span>
+          </div>
           {result.reason && (
             <div className="callout" style={{ marginTop: 16, color: "var(--red)" }}>
               {result.reason}
             </div>
           )}
           <div className="label" style={{ marginTop: 24, marginBottom: 8 }}>
-            Per-window trace
+            Per-window trace (voice authenticity)
           </div>
           <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
             {result.per_window.join(", ")}

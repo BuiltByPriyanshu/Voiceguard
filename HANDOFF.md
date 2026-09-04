@@ -297,3 +297,63 @@ back to §2 and §3.
 - `src/train.py`, `src/eval_eer.py`, `src/dataset.py::ASVspoofDataset` — the
   original raw-audio-only pipeline, kept for reference; superseded by the
   embeddings-based scripts above for actual training tonight.
+
+## 8. Architecture reframe: voice detector → voice trust / risk-fusion system (2026-09-05)
+
+Following mentor feedback, VoiceGuard was reframed from "a real-time
+deepfake detector" to "a real-time voice trust and fraud-prevention
+system, where deepfake detection is one of several evidence sources."
+This did NOT throw away the existing detector — it wraps it.
+
+**What changed:**
+- `src/risk_fusion.py` (new) — `compute_context_risk()`,
+  `fuse_risk()`, `decision_for()`. Turns "how suspicious is the voice"
+  (existing `RiskEngine`) + "what do we know about this interaction"
+  (caller/transaction context) into "how risky is it to trust this
+  interaction". Context is an ADDITIVE bump on voice authenticity,
+  never a dilution — a confidently-flagged synthetic voice stays
+  flagged regardless of context, but a genuine voice in a risky context
+  (unknown caller + high-value transfer) still raises interaction risk.
+  This is deliberately simple, hand-picked policy numbers
+  (`config.CONTEXT_UNKNOWN_CALLER_RISK`, `config.TRANSACTION_VALUE_RISK`,
+  `config.DECISION_BANDS`) for the prototype, not learned or
+  scientifically validated — say so if asked.
+- `backend/app.py` — new `GET`/`POST /context` endpoints
+  (`known_contact`, `transaction_value`); `/analyze` and `/stream` now
+  return `voice_authenticity`, `context_risk`, `interaction_risk`,
+  `decision` ({band, action}) alongside `verdict` (voice alone) and
+  `alert`/`reason` (now driven by the fused `interaction_risk`, not
+  raw voice score). See README.md's API contract for the full shape.
+- Frontend: `RiskMeter` now shows `interaction_risk` as the big primary
+  number and `voice_authenticity` as a secondary readout beside it —
+  deliberately not the same number. New `ContextPanel` component lets
+  the demo toggle caller/transaction context live. `AlertLog` shows
+  both scores per hop.
+
+**Verified demo scenario** (the actual payoff of this change): with
+`teammate_ref.wav` (voice_authenticity stays ~0 throughout) and context
+set to unknown caller + high-value transaction, `interaction_risk`
+climbs to 65 ("verify" band) while `verdict` stays "genuine" — the
+voice itself is never flagged, but the interaction is. Cloning the
+same voice under the same risky context maxes `interaction_risk` at
+100 ("intervene"). This directly demonstrates the multi-signal
+architecture's point: voice authenticity and interaction risk are
+different questions.
+
+**Explicitly deferred as future work (not built), per the phased plan
+agreed on when this was scoped:**
+- Speaker consistency (an enrolled reference-speaker embedding +
+  similarity scoring) — needs a speaker embedding model and an
+  enrollment flow, meaningfully larger than everything above combined.
+- Prosody/behavioral signals (pitch contour, jitter/shimmer, pause
+  statistics) — doable with `librosa`/`praat-parselmouth` but not
+  started; would feed into the same fusion layer as one more signal.
+- Real telephony/VoIP ingestion adapter — not testable without real
+  infra anyway.
+- The 5-experiment test suite proposed alongside this (latency-vs-
+  duration, robustness degradation, contextual-risk demo, false-
+  positive safety, full accuracy/EER/ROC-AUC) is cheap to build from
+  what already exists tonight (the EER work in §3 covers most of
+  Experiment A; the mic-noise investigation in this session's
+  transcript covers Experiment E) but hasn't been formally assembled
+  into one documented suite yet.

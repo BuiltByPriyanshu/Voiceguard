@@ -8,6 +8,7 @@ import AlertModal from "./components/AlertModal.jsx";
 import AlertLog from "./components/AlertLog.jsx";
 import SourceToggle, { DEMO_CLIPS } from "./components/SourceToggle.jsx";
 import ConnectionStatus from "./components/ConnectionStatus.jsx";
+import ContextPanel from "./components/ContextPanel.jsx";
 import ExplainabilityPanel from "./components/ExplainabilityPanel.jsx";
 import UploadDropzone from "./components/UploadDropzone.jsx";
 import ThresholdConfig from "./components/ThresholdConfig.jsx";
@@ -22,7 +23,10 @@ export default function App() {
   const {
     connection,
     streaming,
-    risk,
+    voiceAuthenticity,
+    interactionRisk,
+    decision,
+    verdict: rawVerdict,
     alert,
     reason,
     log,
@@ -43,7 +47,10 @@ export default function App() {
     prevAlertRef.current = alert;
   }, [alert]);
 
-  const verdict = alert ? "Likely synthetic" : "Genuine";
+  // verdict describes the VOICE alone; alert/decision (interactionRisk)
+  // describe the fused interaction -- they can disagree on purpose, e.g. a
+  // genuine voice in a risky context. See src/risk_fusion.py.
+  const verdict = rawVerdict === "synthetic" ? "Likely synthetic" : "Genuine";
 
   const handleMicClick = () => {
     if (streaming) {
@@ -89,7 +96,13 @@ export default function App() {
           </div>
 
           <div className="col-8">
-            <RiskMeter risk={risk} alert={alert} verdict={verdict} />
+            <RiskMeter
+              interactionRisk={interactionRisk}
+              voiceAuthenticity={voiceAuthenticity}
+              alert={alert}
+              verdict={verdict}
+              decision={decision}
+            />
           </div>
 
           <div className="col-12">
@@ -125,6 +138,10 @@ export default function App() {
 
           <div className="col-6">
             <AlertLog entries={log} />
+          </div>
+
+          <div className="col-3">
+            <ContextPanel />
           </div>
 
           <div className="col-12">

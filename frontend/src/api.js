@@ -21,3 +21,19 @@ export async function analyzeFile(file) {
   if (!res.ok) throw new Error(`POST /analyze failed: ${res.status}`);
   return res.json();
 }
+
+export async function getContext() {
+  const res = await fetch("/context");
+  if (!res.ok) throw new Error(`GET /context failed: ${res.status}`);
+  return res.json();
+}
+
+export async function setContext(patch) {
+  const res = await fetch("/context", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) throw new Error(`POST /context failed: ${res.status}`);
+  return res.json();
+}

@@ -17,7 +17,8 @@ export default function AlertLog({ entries }) {
             <thead>
               <tr>
                 <th>Time</th>
-                <th>Risk</th>
+                <th>Voice</th>
+                <th>Interaction</th>
                 <th>Alert</th>
               </tr>
             </thead>
@@ -25,7 +26,8 @@ export default function AlertLog({ entries }) {
               {entries.map((e) => (
                 <tr key={e.t} className={e.alert ? "alert" : undefined}>
                   <td>{formatTime(e.t)}</td>
-                  <td>{e.risk}</td>
+                  <td>{e.voiceAuthenticity}</td>
+                  <td>{e.interactionRisk}</td>
                   <td>{e.alert ? "TRUE" : "false"}</td>
                 </tr>
               ))}

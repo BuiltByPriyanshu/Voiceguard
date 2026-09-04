@@ -27,7 +27,17 @@ function floatTo16BitPCM(float32Array) {
 export function useAudioStream() {
   const [connection, setConnection] = useState("idle"); // idle | connecting | open | closed | error
   const [streaming, setStreaming] = useState(false);
-  const [risk, setRisk] = useState(0);
+  // Two distinct outputs, per the risk-fusion architecture (see
+  // src/risk_fusion.py): voiceAuthenticity is "how suspicious is the voice
+  // itself", interactionRisk is "how risky is it to trust this interaction"
+  // (voice + call/transaction context fused). They are deliberately not
+  // the same number -- interactionRisk is what should gate a sensitive
+  // action, not voiceAuthenticity alone.
+  const [voiceAuthenticity, setVoiceAuthenticity] = useState(0);
+  const [contextRisk, setContextRisk] = useState(0);
+  const [interactionRisk, setInteractionRisk] = useState(0);
+  const [decision, setDecision] = useState({ band: "continue", action: "" });
+  const [verdict, setVerdict] = useState("genuine");
   const [alert, setAlert] = useState(false);
   const [reason, setReason] = useState(null);
   const [log, setLog] = useState([]);
@@ -96,7 +106,11 @@ export function useAudioStream() {
     }
     setStreaming(false);
     setConnection("closed");
-    setRisk(0);
+    setVoiceAuthenticity(0);
+    setContextRisk(0);
+    setInteractionRisk(0);
+    setDecision({ band: "continue", action: "" });
+    setVerdict("genuine");
     setAlert(false);
     setReason(null);
     setElapsed(0);
@@ -118,11 +132,23 @@ export function useAudioStream() {
         } catch {
           return;
         }
-        setRisk(msg.risk);
+        setVoiceAuthenticity(msg.voice_authenticity);
+        setContextRisk(msg.context_risk);
+        setInteractionRisk(msg.interaction_risk);
+        setDecision(msg.decision ?? { band: "continue", action: "" });
+        setVerdict(msg.verdict ?? "genuine");
         setAlert(msg.alert);
         setReason(msg.reason ?? null);
         setLog((prev) =>
-          [{ t: Date.now(), risk: msg.risk, alert: msg.alert }, ...prev].slice(0, 200)
+          [
+            {
+              t: Date.now(),
+              voiceAuthenticity: msg.voice_authenticity,
+              interactionRisk: msg.interaction_risk,
+              alert: msg.alert,
+            },
+            ...prev,
+          ].slice(0, 200)
         );
       };
       ws.onerror = () => {
@@ -236,7 +262,11 @@ export function useAudioStream() {
   return {
     connection,
     streaming,
-    risk,
+    voiceAuthenticity,
+    contextRisk,
+    interactionRisk,
+    decision,
+    verdict,
     alert,
     reason,
     log,

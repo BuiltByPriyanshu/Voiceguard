@@ -209,6 +209,52 @@ button {
   color: var(--red);
 }
 
+.decision-band {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.voice-authenticity-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hairline);
+}
+
+.voice-authenticity-value {
+  font-weight: 800;
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ContextPanel */
+.context-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.context-field-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.context-row .toggle-group {
+  flex-wrap: wrap;
+}
+
+.context-row .toggle-btn {
+  text-transform: capitalize;
+}
+
 /* MicButton -- the primary click-to-speak control */
 .mic-cell {
   display: flex;
