@@ -8,7 +8,8 @@ const wsUrl = () => {
   return `${proto}://${window.location.host}/stream`;
 };
 
-const WAVEFORM_WINDOW = 16000 * 3; // ~3s scrolling window at 16kHz
+const SAMPLE_RATE = 16000; // must match config.SAMPLE_RATE on the backend
+const WAVEFORM_WINDOW = SAMPLE_RATE * 3; // ~3s scrolling window
 
 function floatTo16BitPCM(float32Array) {
   const out = new Int16Array(float32Array.length);
@@ -165,10 +166,29 @@ export function useAudioStream() {
     setLog([]);
     try {
       const ws = await openSocket();
-      const audioCtx = new AudioContext({ sampleRate: 16000 });
+      const audioCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
       audioCtxRef.current = audioCtx;
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Browser defaults (echo cancellation, noise suppression, AGC) actively
+      // reshape the signal in real time -- none of the training data (ASVspoof,
+      // In-the-Wild, demo clips) went through that processing, and it produces
+      // exactly the kind of spectral artifacts a spoof classifier keys on.
+      // Explicitly disabling all three gets the model raw mic input closer to
+      // what it was actually trained on.
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+        },
+      });
       micStreamRef.current = stream;
+      if (audioCtx.sampleRate !== SAMPLE_RATE) {
+        console.warn(
+          `AudioContext sampleRate is ${audioCtx.sampleRate}, not ${SAMPLE_RATE} -- ` +
+            "the browser did not honor the requested rate. Audio sent to the " +
+            "backend will be mislabeled and scored incorrectly."
+        );
+      }
       const sourceNode = audioCtx.createMediaStreamSource(stream);
       sourceNodeRef.current = sourceNode;
       await attachWorklet(sourceNode, audioCtx);
@@ -188,7 +208,7 @@ export function useAudioStream() {
       setLog([]);
       try {
         await openSocket();
-        const audioCtx = new AudioContext({ sampleRate: 16000 });
+        const audioCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
         audioCtxRef.current = audioCtx;
         const res = await fetch(url);
         if (!res.ok) throw new Error(`could not load ${url}: ${res.status}`);
