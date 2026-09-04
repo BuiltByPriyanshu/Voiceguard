@@ -18,7 +18,7 @@ from the plan, and why.
 | Trained checkpoint (`artifacts/model.pth`) with recorded EER | ✅ trained, verified working end-to-end on real audio. ⚠️ EER number is stale (see §5) |
 | Genuine + cloned demo clips (EN + HI) | ✅ `demo_clips/teammate_ref.wav`, `fraud_en.wav`, `fraud_hi.wav` — verified to correctly trigger low/high risk |
 | GitHub repo with all code | ✅ up to date, `main` branch, https://github.com/BuiltByPriyanshu/Voiceguard |
-| Google Drive bundle (checkpoint + clips) | ❌ **not uploaded as of last message** — do this first if picking up |
+| Google Drive bundle (checkpoint + clips) | ✅ `voiceguard_handoff.zip` uploaded — Mac just needs to download + unzip into `artifacts/` and `demo_clips/` |
 | Device-agnostic inference module (`src/infer.py`) | ✅ built and proven working |
 | FastAPI skeleton (`backend/app.py`) | ✅ code complete, **never actually run/smoke-tested** — do this before trusting it |
 
@@ -99,11 +99,10 @@ back to §2 and §3.
 
 ## 5. What's still open (in priority order)
 
-1. **Upload `artifacts/` + `demo_clips/` to Google Drive.** Small — the
-   checkpoint is under 1MB (SSL backbone is frozen and never saved, only
-   downloaded fresh from HuggingFace each run), clips total ~5-10MB. Zip
-   with `!zip -r voiceguard_handoff.zip artifacts demo_clips` in the Kaggle
-   notebook, download, upload to Drive.
+1. ~~Upload `artifacts/` + `demo_clips/` to Google Drive.~~ ✅ Done —
+   `voiceguard_handoff.zip` is in Drive. Mac side: download it, unzip so
+   `artifacts/model.pth` and `demo_clips/*.wav` land in the repo root's
+   `artifacts/` and `demo_clips/` folders (matching `config.py`'s paths).
 2. **Get an honest unseen-attack EER for the pitch deck.** The numbers
    currently in `artifacts/metrics.json` (if any) are from the *discarded*
    third-party-embeddings checkpoint, not the current one — don't quote
