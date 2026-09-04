@@ -1,0 +1,33 @@
+{
+  "clip": "demo_clips/teammate_ref.wav",
+  "scenarios": [
+    {
+      "scenario": "ordinary call, known contact",
+      "voice_authenticity": 0,
+      "context_risk": 0,
+      "interaction_risk": 0,
+      "decision_band": "continue"
+    },
+    {
+      "scenario": "known contact, low-value txn",
+      "voice_authenticity": 0,
+      "context_risk": 10,
+      "interaction_risk": 10,
+      "decision_band": "continue"
+    },
+    {
+      "scenario": "unknown caller, no txn",
+      "voice_authenticity": 0,
+      "context_risk": 20,
+      "interaction_risk": 20,
+      "decision_band": "continue"
+    },
+    {
+      "scenario": "unknown caller, high-value txn (urgent transfer)",
+      "voice_authenticity": 0,
+      "context_risk": 65,
+      "interaction_risk": 65,
+      "decision_band": "verify"
+    }
+  ]
+}

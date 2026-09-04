@@ -350,10 +350,23 @@ agreed on when this was scoped:**
   started; would feed into the same fusion layer as one more signal.
 - Real telephony/VoIP ingestion adapter — not testable without real
   infra anyway.
-- The 5-experiment test suite proposed alongside this (latency-vs-
-  duration, robustness degradation, contextual-risk demo, false-
-  positive safety, full accuracy/EER/ROC-AUC) is cheap to build from
-  what already exists tonight (the EER work in §3 covers most of
-  Experiment A; the mic-noise investigation in this session's
-  transcript covers Experiment E) but hasn't been formally assembled
-  into one documented suite yet.
+- ~~The 5-experiment test suite~~ ✅ Done — see §9.
+
+## 9. Test suite (2026-09-05)
+
+Full results: **`artifacts/TEST_SUITE_REPORT.md`** — the 5 experiments
+from §8's phased plan (accuracy/EER/ROC-AUC, detection latency, real-world
+robustness, contextual risk, false-positive safety), each with a runnable
+command and raw JSON output alongside the checked-in scripts
+(`src/eval_full_metrics.py`, `src/eval_latency.py`,
+`src/eval_robustness.py`, `src/eval_context_demo.py`).
+
+**The one finding worth reading even if you skip the rest:** cloned-voice
+detection degrades badly under additive noise specifically (a confident
+99 drops to a missed 18-36 under mild-to-moderate noise) while staying
+robust to reverb and codec compression. Root cause: this session's
+noise-augmentation work (`--augment-bonafide`) only hardened the
+**bonafide** side, never the **spoof** side, of the calibration data —
+an asymmetry, not a fundamental limit. Fixable by augmenting spoof
+clips with noise the same way; not done yet due to time, flagged here
+rather than shipped silently.

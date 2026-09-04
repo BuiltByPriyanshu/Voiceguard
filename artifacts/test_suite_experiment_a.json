@@ -1,0 +1,28 @@
+{
+  "dataset": "ASVspoof2019-LA-eval-sample10k",
+  "n": 10000,
+  "n_bonafide": 1032,
+  "n_spoof": 8968,
+  "accuracy": 0.9527,
+  "precision": {
+    "bonafide": 0.6986,
+    "spoof": 0.9943
+  },
+  "recall": {
+    "bonafide": 0.9525,
+    "spoof": 0.9527
+  },
+  "f1": {
+    "bonafide": 0.8061,
+    "spoof": 0.9731
+  },
+  "eer_pct": 4.76,
+  "roc_auc": 0.9906,
+  "confusion_matrix": {
+    "tn": 983,
+    "fp": 49,
+    "fn": 424,
+    "tp": 8544
+  },
+  "false_positive_rate": 0.0475
+}

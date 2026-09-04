@@ -1,0 +1,229 @@
+[
+  {
+    "path": "demo_clips/fraud_en.wav",
+    "duration_s": 8.6,
+    "time_to_first_alert_s": 2.0,
+    "mean_inference_latency_ms": 19.3,
+    "first_window_latency_ms": 503.1,
+    "trace": [
+      {
+        "t": 0.0,
+        "risk": 40,
+        "alert": false
+      },
+      {
+        "t": 1.0,
+        "risk": 64,
+        "alert": false
+      },
+      {
+        "t": 2.0,
+        "risk": 78,
+        "alert": true
+      },
+      {
+        "t": 3.0,
+        "risk": 87,
+        "alert": true
+      },
+      {
+        "t": 4.0,
+        "risk": 92,
+        "alert": true
+      },
+      {
+        "t": 5.0,
+        "risk": 95,
+        "alert": true
+      },
+      {
+        "t": 6.0,
+        "risk": 97,
+        "alert": true
+      },
+      {
+        "t": 7.0,
+        "risk": 98,
+        "alert": true
+      },
+      {
+        "t": 8.0,
+        "risk": 99,
+        "alert": true
+      }
+    ]
+  },
+  {
+    "path": "demo_clips/fraud_hi.wav",
+    "duration_s": 6.4,
+    "time_to_first_alert_s": 2.0,
+    "mean_inference_latency_ms": 19.2,
+    "first_window_latency_ms": 19.6,
+    "trace": [
+      {
+        "t": 0.0,
+        "risk": 40,
+        "alert": false
+      },
+      {
+        "t": 1.0,
+        "risk": 64,
+        "alert": false
+      },
+      {
+        "t": 2.0,
+        "risk": 78,
+        "alert": true
+      },
+      {
+        "t": 3.0,
+        "risk": 87,
+        "alert": true
+      },
+      {
+        "t": 4.0,
+        "risk": 92,
+        "alert": true
+      },
+      {
+        "t": 5.0,
+        "risk": 95,
+        "alert": true
+      },
+      {
+        "t": 6.0,
+        "risk": 97,
+        "alert": true
+      }
+    ]
+  },
+  {
+    "path": "demo_clips/teammate_ref.wav",
+    "duration_s": 23.6,
+    "time_to_first_alert_s": null,
+    "mean_inference_latency_ms": 19.5,
+    "first_window_latency_ms": 19.5,
+    "trace": [
+      {
+        "t": 0.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 1.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 2.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 3.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 4.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 5.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 6.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 7.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 8.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 9.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 10.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 11.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 12.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 13.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 14.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 15.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 16.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 17.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 18.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 19.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 20.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 21.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 22.0,
+        "risk": 0,
+        "alert": false
+      },
+      {
+        "t": 23.0,
+        "risk": 0,
+        "alert": false
+      }
+    ]
+  }
+]

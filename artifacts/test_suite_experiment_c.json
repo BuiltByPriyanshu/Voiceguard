@@ -1,0 +1,56 @@
+{
+  "demo_clips/teammate_ref.wav": {
+    "clean": {
+      "peak_risk": 0,
+      "final_risk": 0,
+      "alert": false
+    },
+    "noise_light": {
+      "peak_risk": 0,
+      "final_risk": 0,
+      "alert": false
+    },
+    "noise_heavy": {
+      "peak_risk": 0,
+      "final_risk": 0,
+      "alert": false
+    },
+    "reverb": {
+      "peak_risk": 2,
+      "final_risk": 0,
+      "alert": false
+    },
+    "compressed_telephony": {
+      "peak_risk": 0,
+      "final_risk": 0,
+      "alert": false
+    }
+  },
+  "demo_clips/fraud_en.wav": {
+    "clean": {
+      "peak_risk": 99,
+      "final_risk": 99,
+      "alert": true
+    },
+    "noise_light": {
+      "peak_risk": 18,
+      "final_risk": 18,
+      "alert": false
+    },
+    "noise_heavy": {
+      "peak_risk": 36,
+      "final_risk": 36,
+      "alert": false
+    },
+    "reverb": {
+      "peak_risk": 83,
+      "final_risk": 29,
+      "alert": true
+    },
+    "compressed_telephony": {
+      "peak_risk": 96,
+      "final_risk": 82,
+      "alert": true
+    }
+  }
+}
