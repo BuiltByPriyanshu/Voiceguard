@@ -101,6 +101,55 @@ the false-positive problem), spoof recall 96.8% → 94.7% (small give-back,
 still strong) — see `artifacts/metrics.json` for both numbers side by
 side. All three demo clips re-verified working after this retrain.
 
+**Follow-up same day: generalization to a genuinely novel clone.** Used
+`coqui-tts` (XTTS-v2, installed locally, CPU-only, no CUDA needed —
+matches the original build plan's cloning tool) to clone a fresh voice
+never seen anywhere in training or calibration (`demo_clips/fraud_user_clone.wav`,
+generated from a ~30s reference recording). **The 50x-calibrated
+checkpoint above did NOT catch it** — max risk 43, never crossed the
+alert threshold. This matters: it means the calibration oversampling
+had taught the model those two *specific* utterances rather than
+"cloned speech" in general (their risk traces became nearly identical
+post-retrain, a memorization tell).
+
+Fix attempt: added `smraj0198/mlaad-english-500` on Kaggle (MLAAD
+dataset, CC BY-NC 4.0 — non-commercial only, fine for this hackathon
+but don't reuse the resulting checkpoint commercially without
+retraining on different data) → `src/extract_embeddings.py` against
+its `fake/en/*` split → `artifacts/mlaad_wav2vec.parquet`, 580 rows
+spanning **116 distinct modern TTS/voice-cloning architectures**
+(ElevenLabs, OpenAI TTS-1 HD, XTTS-v1.1/v2, Sesame CSM, VoxCPM,
+Microsoft VibeVoice, and many more) — all spoof, no bonafide side
+needed since ASVspoof+dev+ITW+calibration already cover that.
+Retrained with this added to the mix (same 50x calibration
+oversampling, otherwise same recipe as above).
+
+**Result:** eval EER improved further, 4.73% → 4.51%, bonafide recall
+96.0% → 96.7%. All three original demo clips still verified working.
+**But the fresh clone still wasn't caught** (nearly identical risk
+trace, 44 peak). Root cause once isolated: MLAAD *does* include
+`tts_models_multilingual_multi-dataset_xtts_v2` — the exact model used
+to generate the clone — but only ~5 samples, using MLAAD's own
+reference speakers, not the arbitrary new voice used here. XTTS-v2 is
+*zero-shot* cloning, meaning its synthesis artifacts partially depend
+on the interaction with each specific reference speaker — 5 samples
+across a handful of reference voices isn't enough diversity to
+generalize to an unseen one.
+
+**This is not a bug to keep chasing blindly** — reliably detecting
+SOTA zero-shot voice cloning across *arbitrary unseen reference
+speakers* is the field's actual open research problem (the build plan
+says as much). Two honest paths forward if this matters for the demo:
+1. Generate several more XTTS clones from several different reference
+   voices (not just one) specifically to build speaker-diversity
+   within the XTTS attack family — the most targeted next step, but
+   still a patch, not a structural fix.
+2. Disclose it as a known limitation in the pitch: strong on known
+   attacks and a broad diversity of TTS engines (EER 4.51% on unseen
+   ASVspoof attacks); zero-shot cloning of an arbitrary new speaker via
+   SOTA engines remains hard — which is honest, not a weakness to hide,
+   and matches how the field itself frames the problem.
+
 **Why the calibration step exists and why it's not cheating (much):**
 ASVspoof's bonafide clips are 100% clean studio recordings. A model trained
 only on those learns "genuine = studio-clean" and flags any real-world
