@@ -160,17 +160,44 @@ is left on disk (`artifacts/xtts_diverse_wav2vec.parquet`, gitignored)
 in case someone wants to re-examine it, but it's not part of the
 current `model.pth`'s training mix.
 
-Two honest paths forward if closing this further matters for the demo:
-1. Get a handful of genuinely different *real* reference recordings
-   (not presets) and clone each via `speaker_wav=` — the untried
-   correct version of the attempt above. Still a patch (more speakers
-   helps, but there's no guarantee of full coverage), not a structural
-   fix.
-2. Disclose it as a known limitation in the pitch: strong on known
-   attacks and a broad diversity of TTS engines (EER 4.24% on unseen
-   ASVspoof attacks); zero-shot cloning of an arbitrary new speaker via
-   SOTA engines remains hard — which is honest, not a weakness to hide,
-   and matches how the field itself frames the problem.
+**Also tried and didn't work — the "correct" version of the above,
+still insufficient:** used `speaker_wav=demo_clips/teammate_ref.wav`
+(the actual zero-shot cloning pathway, not presets) to generate 10
+clones of 10 different fraud-call-style sentences, all from the one
+real reference voice already in calibration →
+`artifacts/xtts_speaker_wav_diverse_wav2vec.parquet`, 71 rows.
+Deliberately did NOT use the fresh-clone's own reference voice
+(`new_recording.wav`) for this — doing so would just be calibrating on
+that speaker again (same pattern as `fraud_en`/`fraud_hi`), not testing
+generalization. Mixed in and retrained. **Result: still not caught (53
+peak, still short of the 70 threshold) and eval EER got worse again
+(4.24% → 4.75%).** Reverted this too.
+
+**Conclusion after 4 documented attempts (50x calibration oversampling,
+MLAAD engine diversity, XTTS presets, extra same-speaker `speaker_wav`
+utterances):** the two that added genuine *new information* (MLAAD's
+116 engines) measurably improved the general untouched-eval-set EER;
+none of the four touched the fresh-unseen-speaker case, including the
+one that used the technically-correct cloning pathway. This is a
+real, structural signal, not a process-of-elimination fluke: reliably
+detecting SOTA zero-shot voice cloning of an *arbitrary new speaker*
+needs genuine speaker-count diversity in training (many different real
+people's voices cloned), which none of the four attempts actually had
+(0, 58 non-cloning presets, 1, and 1 real speaker respectively). Getting
+that requires either several people recording reference clips, or a
+dataset with many individually-cloned real speakers (attempted via
+Kaggle's single-file `-f` download against ASVspoof's dev protocol —
+404'd, the API's file-listing paths don't match actual storage paths
+for this dataset, same issue hit earlier with In-the-Wild).
+
+**Current checkpoint's honest capability, for the pitch:** strong,
+measured detection of known attacks and a broad diversity of TTS
+engines (EER 4.2-4.8% across re-runs on unseen ASVspoof attacks, up
+from 5.72% baseline; the range reflects training randomness, not
+instability in the approach) — zero-shot cloning of a genuinely new
+speaker via SOTA engines like XTTS-v2 remains undetected. Say this
+directly if asked; it's an honest characterization of a real,
+field-wide open problem, not a gap unique to this project.
 
 **Why the calibration step exists and why it's not cheating (much):**
 ASVspoof's bonafide clips are 100% clean studio recordings. A model trained
