@@ -1,6 +1,7 @@
 # Large binaries -> Google Drive, not git
 artifacts/*.pth
 artifacts/*.ckpt
+artifacts/*.parquet
 demo_clips/*.wav
 *.ckpt
 *.pth

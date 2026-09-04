@@ -13,6 +13,8 @@ API contract (also documented in README.md):
 Mic audio is captured in the browser (Web Audio API) and streamed over the
 WebSocket -- this deliberately avoids needing pyaudio/portaudio on the Mac.
 """
+from __future__ import annotations
+
 import io
 import json
 
