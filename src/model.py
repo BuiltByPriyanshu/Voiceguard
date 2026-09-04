@@ -57,6 +57,15 @@ class VoiceGuardNet(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """x: (B, T) raw waveform @16kHz -> (B, 2) logits."""
+        # Wav2Vec2Model expects input already zero-mean/unit-variance per
+        # utterance (what Wav2Vec2FeatureExtractor's default do_normalize=True
+        # does) -- without this the SSL backbone sees out-of-distribution
+        # input and produces degenerate features, which is why raw-audio
+        # inference was previously collapsing to risk=0 on every clip.
+        mean = x.mean(dim=-1, keepdim=True)
+        var = x.var(dim=-1, keepdim=True, unbiased=False)
+        x = (x - mean) / torch.sqrt(var + 1e-7)
+
         feats = self.ssl(x).last_hidden_state   # (B, L, H)
         pooled = feats.mean(dim=1)               # mean pool over time
         return self.head(pooled)
