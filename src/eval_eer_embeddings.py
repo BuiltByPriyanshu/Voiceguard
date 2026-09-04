@@ -35,9 +35,18 @@ def main():
 
     X, y = load_embedding_parquet(args.parquet)
     X = X.to(device)
+    n_bonafide, n_spoof = int((y == 0).sum()), int((y == 1).sum())
+    print(f"Loaded {X.shape[0]} rows: bonafide={n_bonafide}, spoof={n_spoof}")
 
     with torch.no_grad():
-        probs = F.softmax(model(X), dim=-1)[:, 1]  # P(spoof)
+        logits = model(X)
+        probs = F.softmax(logits, dim=-1)[:, 1]  # P(spoof)
+        preds = logits.argmax(dim=-1).cpu()
+
+    for cls, name in ((0, "bonafide"), (1, "spoof")):
+        mask = y == cls
+        recall = (preds[mask] == cls).float().mean().item() if mask.any() else float("nan")
+        print(f"  {name} recall: {recall:.4f}")
 
     eer = compute_eer(y.tolist(), probs.cpu().tolist())
     print(f"EER on {args.dataset_name}: {eer * 100:.2f}%")

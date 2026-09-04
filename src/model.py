@@ -10,8 +10,27 @@ from transformers import Wav2Vec2Model
 from config import SSL_MODEL_NAME, FREEZE_SSL, HIDDEN_DIM, EMBEDDING_DIM
 
 
+class Normalize(nn.Module):
+    """Fixed (non-trainable) feature standardization, baked in as buffers so
+    it's saved/loaded automatically with the rest of the checkpoint -- no
+    separate stats file to keep in sync between training and inference."""
+
+    def __init__(self, dim: int):
+        super().__init__()
+        self.register_buffer("mean", torch.zeros(dim))
+        self.register_buffer("std", torch.ones(dim))
+
+    def set_stats(self, mean: torch.Tensor, std: torch.Tensor):
+        self.mean.copy_(mean)
+        self.std.copy_(std)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return (x - self.mean) / self.std
+
+
 def build_head(in_dim: int, hidden_dim: int = HIDDEN_DIM) -> nn.Sequential:
     return nn.Sequential(
+        Normalize(in_dim),
         nn.Linear(in_dim, hidden_dim),
         nn.ReLU(),
         nn.Dropout(0.3),

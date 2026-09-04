@@ -20,10 +20,13 @@ IN_THE_WILD_DIR = os.path.join(KAGGLE_INPUT_DIR, "in-the-wild")
 
 # --- Audio ---------------------------------------------------------------
 SAMPLE_RATE = 16_000          # wav2vec2 / XLS-R required rate
-CLIP_SECONDS = 4.0            # fixed-length training clip
-WINDOW_SECONDS = 4.0          # streaming inference window
-HOP_SECONDS = 1.0             # streaming inference hop
-EMA_ALPHA = 0.6               # running risk score smoothing
+CLIP_SECONDS = 4.0            # fixed-length training clip (raw-audio path only)
+# 2s window / 1s hop matches exactly how eminkorkut/deepfakevoice-wac2vec-4datasets
+# built its embeddings (2s segments, 1s overlap) -- keeping inference-time
+# pooling on the same timescale as training data reduces train/inference skew.
+WINDOW_SECONDS = 2.0           # streaming inference window
+HOP_SECONDS = 1.0              # streaming inference hop
+EMA_ALPHA = 0.6                # running risk score smoothing
 
 # --- Model -----------------------------------------------------------
 # Matched to the precomputed-embedding dataset used for tonight's training
