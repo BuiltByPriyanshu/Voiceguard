@@ -29,11 +29,12 @@ from transformers import Wav2Vec2Model
 from config import SSL_MODEL_NAME, SAMPLE_RATE, WINDOW_SECONDS, HOP_SECONDS
 from src.device import get_device
 from src.dataset import load_waveform
+from src.augment import augment_variants
 
 
 @torch.no_grad()
-def extract_windows(path: str, label_str: str, ssl, device, win_samples: int, hop_samples: int, sr: int):
-    waveform = load_waveform(path, sr)
+def extract_windows_from_waveform(waveform: np.ndarray, label_str: str, ssl, device,
+                                   win_samples: int, hop_samples: int):
     rows = []
     pos = 0
     while pos < len(waveform):
@@ -60,6 +61,10 @@ def main():
                          help="a WAV path and its label (bonafide/spoof); repeat --clip for multiple files")
     parser.add_argument("--out", required=True)
     parser.add_argument("--ssl-name", default=SSL_MODEL_NAME)
+    parser.add_argument("--augment-bonafide", action="store_true",
+                         help="also extract noise/reverb variants of each bonafide clip "
+                              "(see src/augment.py) -- hardens against real-world mic/room "
+                              "conditions the clean original doesn't cover")
     args = parser.parse_args()
 
     device = get_device()
@@ -70,9 +75,18 @@ def main():
 
     all_rows = []
     for path, label in args.clip:
-        rows = extract_windows(path, label, ssl, device, win_samples, hop_samples, SAMPLE_RATE)
+        waveform = load_waveform(path, SAMPLE_RATE)
+        rows = extract_windows_from_waveform(waveform, label, ssl, device, win_samples, hop_samples)
         print(f"  {path} ({label}): {len(rows)} windows")
         all_rows.extend(rows)
+
+        if args.augment_bonafide and label.lower() == "bonafide":
+            for variant_name, variant_wave in augment_variants(waveform, SAMPLE_RATE):
+                variant_rows = extract_windows_from_waveform(
+                    variant_wave, label, ssl, device, win_samples, hop_samples
+                )
+                print(f"    + {variant_name}: {len(variant_rows)} windows")
+                all_rows.extend(variant_rows)
 
     df = pd.DataFrame(all_rows)
     out_dir = os.path.dirname(args.out)

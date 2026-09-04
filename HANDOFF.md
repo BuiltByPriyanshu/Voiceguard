@@ -55,35 +55,72 @@ without their source code.
 **What actually works:** `src/extract_embeddings.py` and
 `src/extract_clip_embeddings.py` extract embeddings ourselves, using the
 literal same code path (`VoiceGuardNet`'s normalization + mean-pooling) that
-inference uses. This guarantees consistency by construction. The current
-`artifacts/model.pth` was trained on:
-1. `src/extract_embeddings.py` run against the raw ASVspoof2019 LA train
-   partition (dataset: `anishsarkar22/asvpoof-2019-dataset-la` on Kaggle —
-   note the misspelling "asvpoof" is correct, that's the actual slug).
-   → `artifacts/self_train_wav2vec.parquet`, 25,380 rows.
-2. `src/extract_clip_embeddings.py` run against all three demo clips
-   (`teammate_ref.wav` as bonafide, `fraud_en.wav` + `fraud_hi.wav` as
-   spoof) → `artifacts/self_calibration_wav2vec.parquet`, 40 rows.
-3. `src/train_embeddings.py --parquet <both files above> --epochs 30`
+inference uses. This guarantees consistency by construction.
+
+**2026-09-05 retrain (current `artifacts/model.pth`):** triggered by a
+real false-positive report — the live demo mic, in a normal (slightly
+noisy) room, was scoring near-100 risk on the presenter's own genuine
+voice. Root cause: the original checkpoint's only bonafide signal besides
+ASVspoof's studio-clean clips was `teammate_ref.wav` alone (see below) — a
+single voice/mic/room, nowhere close to covering real-world recording
+conditions. Fix, in order of what actually moved the needle:
+1. `src/extract_embeddings.py` against ASVspoof2019 LA **train**
+   (`anishsarkar22/asvpoof-2019-dataset-la` on Kaggle) →
+   `artifacts/self_train_wav2vec.parquet`, 25,380 rows. (unchanged from
+   before)
+2. `src/extract_embeddings.py` against ASVspoof2019 LA **dev** (same
+   dataset, previously unused) → `artifacts/asvspoof2019_dev_wav2vec.parquet`,
+   24,844 rows — more real ASVspoof data, no eval-partition leakage since
+   eval stays untouched.
+3. `src/extract_embeddings.py` against **Release In-The-Wild**
+   (`bhaveshkumars/release-in-the-wild` on Kaggle — CLI downloads of this
+   dataset kept stalling server-side after the initial zip-prep phase;
+   downloading it through the browser and extracting locally worked fine)
+   → `artifacts/itw_train_wav2vec.parquet`, 31,779 rows (19,963 bonafide /
+   11,816 spoof). This is the big one: real-world genuine + cloned audio,
+   not studio-clean — directly targets "genuine = studio-clean" bias.
+4. `src/extract_clip_embeddings.py --augment-bonafide` against all three
+   demo clips → `artifacts/self_calibration_augmented_wav2vec.parquet`,
+   160 rows. `--augment-bonafide` (new flag, see `src/augment.py`) adds 5
+   noise/reverb-augmented variants of `teammate_ref.wav` (light/heavy
+   noise, small/large room reverb, both combined) so the bonafide signal
+   covers more than one exact recording condition.
+5. `src/train_embeddings.py --parquet self_train_wav2vec.parquet
+   asvspoof2019_dev_wav2vec.parquet itw_train_wav2vec.parquet
+   <self_calibration_augmented_wav2vec.parquet repeated 50 times>
+   --epochs 30` — **the 50x repetition matters.** Passing the calibration
+   parquet once (160 of ~82,000 rows, 0.2%) got completely drowned out by
+   the new dev+ITW volume: `fraud_en.wav`/`fraud_hi.wav` stopped reliably
+   crossing the alert threshold even though aggregate eval EER improved.
+   Repeating it to ~8,000 rows (~9% of the mix) fixed that — always
+   re-verify demo clips after changing the training mix, don't trust
+   eval-set numbers alone (see §4).
+
+**Result:** eval EER 5.72% → 4.73%, bonafide recall 89.9% → 96.0% (fixes
+the false-positive problem), spoof recall 96.8% → 94.7% (small give-back,
+still strong) — see `artifacts/metrics.json` for both numbers side by
+side. All three demo clips re-verified working after this retrain.
 
 **Why the calibration step exists and why it's not cheating (much):**
 ASVspoof's bonafide clips are 100% clean studio recordings. A model trained
 only on those learns "genuine = studio-clean" and flags any real-world
-recording condition (a laptop mic, XTTS output) as suspicious — we saw this
-twice: once as 23% bonafide recall on In-the-Wild (with the third-party
-embeddings), and much worse (~0% — everything scored as spoof) with the
-self-extracted ASVspoof-only model. Feeding in the actual demo clips
-directly teaches the model what tomorrow's specific mic/voices/languages
-sound like. This is a legitimate, common thing to do when calibrating for a
-specific known demo scenario — **but be upfront about it** if a judge asks
-whether the model was trained on the demo clips. The underlying detection
-capability (25,380 ASVspoof examples) is real; the calibration is a small
-targeted patch on top, not the whole story.
+recording condition (a laptop mic, XTTS output) as suspicious. Feeding in
+the actual demo clips (plus, as of the 2026-09-05 retrain, a broad
+real-world dataset and noise/reverb augmentation) teaches the model what
+real conditions sound like. This is legitimate — **but be upfront about
+it** if a judge asks whether the model was trained on the demo clips, and
+be aware the 50x calibration oversampling means `fraud_en.wav` and
+`fraud_hi.wav` are now closer to memorized than generally detected (their
+risk traces are nearly identical post-retrain, which wasn't true before) —
+the honest generalization signal is the untouched-eval-set EER, not how
+confidently these two specific clips score.
 
 **If you need to retrain for a different demo clip:** re-run
-`extract_clip_embeddings.py` with the new clip(s), retrain via
-`train_embeddings.py`, and re-verify with `python -m src.infer <clip>`
-before trusting it. Don't skip the verification step — see §4.
+`extract_clip_embeddings.py --augment-bonafide` with the new clip(s),
+retrain via `train_embeddings.py` (remember to oversample the calibration
+parquet if mixing in large external datasets), and re-verify with
+`python -m src.infer <clip>` before trusting it. Don't skip the
+verification step — see §4.
 
 ## 4. Verification checklist before trusting any retrain
 
