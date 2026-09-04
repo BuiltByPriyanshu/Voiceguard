@@ -63,10 +63,6 @@ button {
   letter-spacing: -0.01em;
 }
 
-.wordmark span {
-  color: var(--red);
-}
-
 .view-tabs {
   display: flex;
   gap: 24px;
@@ -173,8 +169,8 @@ button {
 
 .risk-number {
   font-weight: 800;
-  font-size: clamp(96px, 12vw, 160px);
-  line-height: 0.9;
+  font-size: clamp(96px, 12vw, 168px);
+  line-height: 0.86;
   font-variant-numeric: tabular-nums;
   color: var(--text);
   transition: color 200ms ease-out;
@@ -210,6 +206,101 @@ button {
 
 .verdict-badge.synthetic {
   border-color: var(--red);
+  color: var(--red);
+}
+
+/* MicButton -- the primary click-to-speak control */
+.mic-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.mic-wrap {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  padding: 0;
+  border: none;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mic-btn {
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  transition: background-color 200ms ease-out, border-color 200ms ease-out;
+}
+
+.mic-btn svg {
+  width: 34px;
+  height: 34px;
+  fill: none;
+  stroke-width: 1.6;
+  transition: stroke 200ms ease-out;
+}
+
+.mic-wrap.idle .mic-btn {
+  border: 1.5px solid var(--text);
+}
+.mic-wrap.idle .mic-btn svg {
+  stroke: var(--text);
+}
+
+.mic-wrap.listening .mic-btn {
+  background: var(--text);
+}
+.mic-wrap.listening .mic-btn svg {
+  stroke: var(--bg);
+}
+.mic-wrap.listening .mic-ring {
+  border-color: var(--text);
+}
+
+.mic-wrap.alert .mic-btn {
+  background: var(--red);
+}
+.mic-wrap.alert .mic-btn svg {
+  stroke: var(--bg);
+}
+.mic-wrap.alert .mic-ring {
+  border-color: var(--red);
+}
+
+.mic-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--text);
+  animation: ringPulse 1.6s ease-out infinite;
+}
+.mic-ring.d2 {
+  animation-delay: 0.55s;
+}
+
+@keyframes ringPulse {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.55); opacity: 0; }
+}
+
+.mic-label {
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+.mic-label.alert {
   color: var(--red);
 }
 

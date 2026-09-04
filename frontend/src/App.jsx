@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { useAudioStream } from "./useAudioStream.js";
 import CallerPanel from "./components/CallerPanel.jsx";
 import RiskMeter from "./components/RiskMeter.jsx";
+import MicButton from "./components/MicButton.jsx";
 import WaveformCanvas from "./components/WaveformCanvas.jsx";
 import AlertModal from "./components/AlertModal.jsx";
 import AlertLog from "./components/AlertLog.jsx";
-import SourceToggle from "./components/SourceToggle.jsx";
+import SourceToggle, { DEMO_CLIPS } from "./components/SourceToggle.jsx";
 import ConnectionStatus from "./components/ConnectionStatus.jsx";
 import ExplainabilityPanel from "./components/ExplainabilityPanel.jsx";
 import UploadDropzone from "./components/UploadDropzone.jsx";
@@ -14,6 +15,8 @@ import ThresholdConfig from "./components/ThresholdConfig.jsx";
 export default function App() {
   const [view, setView] = useState("call"); // call | upload
   const [modalOpen, setModalOpen] = useState(false);
+  const [sourceMode, setSourceMode] = useState("mic"); // mic | clip
+  const [clip, setClip] = useState(DEMO_CLIPS[0].file);
   const prevAlertRef = useRef(false);
 
   const {
@@ -42,12 +45,20 @@ export default function App() {
 
   const verdict = alert ? "Likely synthetic" : "Genuine";
 
+  const handleMicClick = () => {
+    if (streaming) {
+      stop();
+    } else if (sourceMode === "mic") {
+      startMic();
+    } else {
+      startClip(`/demo_clips/${clip}`);
+    }
+  };
+
   return (
     <div className="app-shell">
       <div className="top-bar">
-        <div className="wordmark">
-          Voice<span>Guard</span>
-        </div>
+        <div className="wordmark">VoiceGuard</div>
         <div className="view-tabs">
           <button
             className={`view-tab${view === "call" ? " active" : ""}`}
@@ -77,10 +88,25 @@ export default function App() {
             />
           </div>
 
-          <div className="col-5" />
-
-          <div className="col-3">
+          <div className="col-8">
             <RiskMeter risk={risk} alert={alert} verdict={verdict} />
+          </div>
+
+          <div className="col-12">
+            <hr className="hairline" />
+          </div>
+
+          <div className="col-4">
+            <MicButton streaming={streaming} alert={alert} onClick={handleMicClick} />
+            {error && (
+              <div className="callout" style={{ color: "var(--red)", marginTop: 16 }}>
+                {error}
+              </div>
+            )}
+          </div>
+
+          <div className="col-8">
+            <WaveformCanvas data={waveform} alert={alert} />
           </div>
 
           <div className="col-12">
@@ -89,20 +115,16 @@ export default function App() {
 
           <div className="col-3">
             <SourceToggle
-              streaming={streaming}
-              onStartMic={startMic}
-              onStartClip={startClip}
-              onStop={stop}
+              mode={sourceMode}
+              setMode={setSourceMode}
+              clip={clip}
+              setClip={setClip}
+              disabled={streaming}
             />
-            {error && (
-              <div className="callout" style={{ color: "var(--red)", marginTop: 16 }}>
-                {error}
-              </div>
-            )}
           </div>
 
-          <div className="col-9">
-            <WaveformCanvas data={waveform} alert={alert} />
+          <div className="col-6">
+            <AlertLog entries={log} />
           </div>
 
           <div className="col-12">
@@ -110,14 +132,10 @@ export default function App() {
           </div>
 
           <div className="col-6">
-            <AlertLog entries={log} />
-          </div>
-
-          <div className="col-3">
             <ExplainabilityPanel />
           </div>
 
-          <div className="col-3">
+          <div className="col-6">
             <ThresholdConfig />
           </div>
         </div>
