@@ -14,3 +14,4 @@ fastapi
 uvicorn
 websockets
 python-multipart
+requests           # sdk/voiceguard_client.py integration snippet

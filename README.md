@@ -113,6 +113,32 @@ Mic capture happens **in the browser** via the Web Audio API — the backend
 never touches `pyaudio`/`portaudio`, so there's nothing extra to install on
 the Mac.
 
+## Frontend
+
+```
+cd frontend
+npm install
+npm run dev   # http://localhost:5173
+```
+Requires the backend running on `127.0.0.1:8000` (`uvicorn backend.app:app`)
+— Vite's dev server proxies `/config`, `/analyze`, and `/stream` (including
+the WebSocket) to it, so the app talks to the backend same-origin. See
+`FRONTEND_BRIEF.md` for the component/design spec.
+
+## Integration SDK snippet
+
+`sdk/voiceguard_client.py` — the one-function example of how a bank or
+contact-center call flow gates a sensitive action on VoiceGuard:
+```python
+from sdk.voiceguard_client import verify_call
+
+result = verify_call(audio_bytes, base_url="http://localhost:8000")
+if result["alert"]:
+    ...  # block / require call-back + MFA before proceeding
+```
+For continuous in-call monitoring rather than a one-shot check, stream to
+`WS /stream` instead (see the API contract above).
+
 ## Handoff bundle (what the Mac pulls tomorrow)
 
 | Item | Where |
