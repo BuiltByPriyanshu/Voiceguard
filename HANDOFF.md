@@ -362,11 +362,49 @@ command and raw JSON output alongside the checked-in scripts
 `src/eval_robustness.py`, `src/eval_context_demo.py`).
 
 **The one finding worth reading even if you skip the rest:** cloned-voice
-detection degrades badly under additive noise specifically (a confident
-99 drops to a missed 18-36 under mild-to-moderate noise) while staying
-robust to reverb and codec compression. Root cause: this session's
-noise-augmentation work (`--augment-bonafide`) only hardened the
-**bonafide** side, never the **spoof** side, of the calibration data —
-an asymmetry, not a fundamental limit. Fixable by augmenting spoof
-clips with noise the same way; not done yet due to time, flagged here
-rather than shipped silently.
+detection originally degraded badly under additive noise specifically (a
+confident 99 dropped to a missed 18-36 under mild-to-moderate noise)
+while staying robust to reverb and codec compression. Root cause: this
+session's noise-augmentation work (`--augment-bonafide`) only hardened
+the **bonafide** side, never the **spoof** side, of the calibration data
+— an asymmetry, not a fundamental limit. **Fixed same day, see §10.**
+
+## 10. Fixed: noise-robustness asymmetry found by the test suite (2026-09-05)
+
+Experiment C in §9's test suite found cloned-voice detection collapsing
+under noise (99 → 18 under mild 25dB-SNR noise, → 36 under heavy 10dB
+noise) while the genuine side stayed robust everywhere and reverb/
+compression were both handled fine. Root cause: the noise augmentation
+from the earlier same-day retrain (§3,
+`extract_clip_embeddings.py --augment-bonafide`) only ever applied
+noise/reverb variants to the **bonafide** clip (`teammate_ref.wav`) — the
+model learned "noisy audio can still be genuine" but was never shown a
+single noisy example of a clone, so it had no reason to learn "noisy
+audio can still be synthetic."
+
+**Fix:** added a matching `--augment-spoof` flag to
+`extract_clip_embeddings.py` (symmetric with `--augment-bonafide`, same
+`src/augment.py` variants) and re-extracted calibration data with BOTH
+flags → `artifacts/self_calibration_augmented_symmetric_wav2vec.parquet`,
+240 rows (144 bonafide + 96 spoof — `fraud_en.wav`/`fraud_hi.wav` now get
+noise/reverb variants too, not just the bonafide clip). Retrained with
+this replacing the old asymmetric calibration parquet in the mix
+(same 50x oversampling, same everything else as §3's recipe).
+
+**Result:** `fraud_en.wav` now scores 99/99/99/98/96 across
+clean/light-noise/heavy-noise/reverb/compressed (was 99/18/36/83/96) —
+fully robust. No regression anywhere else: eval EER actually improved
+slightly alongside it (4.76% → 4.61%), false-positive rate improved too
+(4.75% → 4.07%), and all demo clips including the held-out fresh clone
+(`fraud_user_clone.wav`, deliberately never trained on) were re-verified
+— the clone stayed correctly un-caught, confirming this fix didn't
+accidentally leak that test case into training.
+
+**Takeaway for future retraining:** any time you add noise/reverb/other
+augmentation to one class, check whether the other class needs the same
+treatment. It's an easy asymmetry to introduce by only thinking about
+"harden bonafide against real-world conditions" without asking "does the
+attacker's audio also go through those same real-world conditions before
+it reaches the mic?" (Answer: yes, always — a cloned voice played through
+a speaker into a noisy room is exactly as noisy as a genuine voice in
+that room.)

@@ -65,6 +65,12 @@ def main():
                          help="also extract noise/reverb variants of each bonafide clip "
                               "(see src/augment.py) -- hardens against real-world mic/room "
                               "conditions the clean original doesn't cover")
+    parser.add_argument("--augment-spoof", action="store_true",
+                         help="same as --augment-bonafide but for spoof clips -- without this, "
+                              "noise augmentation only teaches 'noisy audio can still be genuine' "
+                              "and never 'noisy audio can still be a clone', which lets a cloned "
+                              "voice through a noisy mic slip past undetected (see "
+                              "artifacts/TEST_SUITE_REPORT.md Experiment C)")
     args = parser.parse_args()
 
     device = get_device()
@@ -80,7 +86,11 @@ def main():
         print(f"  {path} ({label}): {len(rows)} windows")
         all_rows.extend(rows)
 
-        if args.augment_bonafide and label.lower() == "bonafide":
+        should_augment = (
+            (args.augment_bonafide and label.lower() == "bonafide")
+            or (args.augment_spoof and label.lower() == "spoof")
+        )
+        if should_augment:
             for variant_name, variant_wave in augment_variants(waveform, SAMPLE_RATE):
                 variant_rows = extract_windows_from_waveform(
                     variant_wave, label, ssl, device, win_samples, hop_samples

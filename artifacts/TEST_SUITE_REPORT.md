@@ -1,7 +1,8 @@
 # VoiceGuard Test Suite — Results
 
-Generated 2026-09-05. Reproduce any experiment with the commands shown;
-raw JSON for each is in `artifacts/test_suite_experiment_{a,b,c,d}.json`.
+Generated 2026-09-05, updated same day after the noise-asymmetry fix
+(HANDOFF.md §10). Reproduce any experiment with the commands shown; raw
+JSON for each is in `artifacts/test_suite_experiment_{a,b,c,d}.json`.
 Checkpoint under test: `artifacts/model.pth` (see `HANDOFF.md` for how it
 was trained; honest unseen-attack EER 4.2-4.8% across re-runs).
 
@@ -23,27 +24,27 @@ training.
 
 | Metric | Bonafide | Spoof | Overall |
 |---|---|---|---|
-| Precision | 0.699 | 0.994 | — |
-| Recall | 0.953 | 0.953 | — |
-| F1 | 0.806 | 0.973 | — |
+| Precision | 0.699 | 0.995 | — |
+| Recall | 0.959 | 0.953 | — |
+| F1 | 0.809 | 0.973 | — |
 | Accuracy | — | — | 0.953 |
-| ROC-AUC | — | — | 0.991 |
-| EER | — | — | 4.76% |
+| ROC-AUC | — | — | 0.992 |
+| EER | — | — | 4.61% |
 
-Confusion matrix: TN=983, FP=49, FN=424, TP=8544.
+Confusion matrix: TN=990, FP=42, FN=426, TP=8542.
 
 **Reading this honestly:** bonafide precision (0.699) is much lower than
-spoof precision (0.994) purely because the eval set is 90% spoof — a
-small absolute false-positive count (49) looks large as a fraction of the
-small bonafide class. Recall is balanced (0.953 both classes), which is
-the number that actually reflects per-class detection quality.
+spoof precision (0.995) purely because the eval set is 90% spoof — a
+small absolute false-positive count (42) looks large as a fraction of the
+small bonafide class. Recall is balanced (0.959 / 0.953), which is the
+number that actually reflects per-class detection quality.
 
 ---
 
 ## Experiment E — False-positive safety
 
 Read directly off Experiment A (same run, same population): of 1,032
-genuine utterances, **49 were incorrectly flagged as synthetic — a 4.75%
+genuine utterances, **42 were incorrectly flagged as synthetic — a 4.07%
 false-positive rate.** This is the number that matters most for whether
 the system is safe to deploy: it directly measures how often a real
 caller's legitimate voice would trigger an unnecessary block/verification
@@ -65,8 +66,8 @@ python -m src.eval_latency demo_clips/fraud_en.wav demo_clips/fraud_hi.wav
 
 | Clip | Duration | Time to first alert | Mean inference latency / window |
 |---|---|---|---|
-| `fraud_en.wav` | 8.6s | **2.0s** | 19.3ms |
-| `fraud_hi.wav` | 6.4s | **2.0s** | 19.2ms |
+| `fraud_en.wav` | 8.6s | **2.0s** | 19.5ms |
+| `fraud_hi.wav` | 6.4s | **2.0s** | 19.9ms |
 | `teammate_ref.wav` (genuine) | 23.6s | never (correct) | 19.5ms |
 
 Both cloned clips cross the alert threshold within the first two seconds
@@ -89,25 +90,29 @@ Peak risk score (0-100) under each degradation, same two clips:
 | Condition | `teammate_ref.wav` (genuine) | `fraud_en.wav` (cloned) |
 |---|---|---|
 | Clean | 0 | 99 (alert) |
-| Light noise (25dB SNR) | 0 | **18 (missed)** |
-| Heavy noise (10dB SNR) | 0 | **36 (missed)** |
-| Reverb | 2 | 83 (alert) |
-| Compressed (telephony-style, 12kbps AAC round-trip) | 0 | 96 (alert) |
+| Light noise (25dB SNR) | 0 | 99 (alert) |
+| Heavy noise (10dB SNR) | 0 | 99 (alert) |
+| Reverb | 2 | 98 (alert) |
+| Compressed (telephony-style, 12kbps AAC round-trip) | 1 | 96 (alert) |
 
-**This is the most important honest finding in this suite.** The genuine
-side is robust everywhere (never a false positive, even under heavy
-degradation) — but **cloned-voice detection is fragile specifically
-under additive noise**, degrading from a confident 99 down to a missed
-18-36 under noise levels a real room easily produces. Reverb and codec
-compression are handled much better.
+**Originally found a real gap here, since fixed.** The first run of this
+experiment found cloned-voice detection collapsing under noise (99 → 18
+under mild noise, → 36 under heavy noise) while staying robust to reverb
+and compression, even though the genuine side was robust everywhere.
 
-**Root cause, diagnosed, not just observed:** the noise-augmentation work
-this session (`extract_clip_embeddings.py --augment-bonafide`,
-`src/augment.py`) only hardened the **bonafide** side against noise — the
-model learned "noisy audio can still be genuine" but never learned
-"noisy audio can still be a clone." That asymmetry is the fix: augment
-spoof-labeled training clips with the same noise conditions, not just
-bonafide ones. Not done yet — flagged here rather than silently shipped.
+**Root cause, diagnosed, not just patched:** the noise-augmentation work
+from earlier this session (`extract_clip_embeddings.py --augment-bonafide`)
+only ever hardened the **bonafide** side against noise — the model
+learned "noisy audio can still be genuine" but never learned "noisy audio
+can still be a clone." **Fix:** added a matching `--augment-spoof` flag
+and re-extracted the calibration data with noise/reverb variants applied
+symmetrically to both classes (`self_calibration_augmented_symmetric_wav2vec.parquet`,
+240 rows: 144 bonafide + 96 spoof), then retrained (see `HANDOFF.md` §10).
+Retrained checkpoint is now robust across every condition tested, with no
+regression elsewhere — eval EER actually improved slightly alongside it
+(4.76% → 4.61%), and all demo clips (including the held-out fresh clone,
+which stayed correctly un-caught, confirming no leakage) were
+re-verified.
 
 ---
 
@@ -138,15 +143,14 @@ that voice authenticity and interaction risk answer different questions.
 
 | Experiment | Result | Status |
 |---|---|---|
-| A — accuracy/EER/ROC-AUC | EER 4.76%, ROC-AUC 0.991 | ✅ strong |
-| B — detection latency | Alerts within 2s, ~19ms/window inference | ✅ strong |
-| C — robustness | Robust to reverb/compression; **fragile to noise on the spoof side** | ⚠️ known gap, root cause diagnosed |
+| A — accuracy/EER/ROC-AUC | EER 4.61%, ROC-AUC 0.992 | ✅ strong |
+| B — detection latency | Alerts within 2s, ~19-20ms/window inference | ✅ strong |
+| C — robustness | Robust across clean/noise/reverb/compression | ✅ fixed (was fragile to noise; see write-up above) |
 | D — contextual risk | Works exactly as designed | ✅ verified live |
-| E — false-positive safety | 4.75% FPR (halved from pre-retrain ~10.1%) | ✅ improved, not zero |
+| E — false-positive safety | 4.07% FPR (down from pre-retrain ~10.1%) | ✅ improved, not zero |
 
-**Known, disclosed limitations** (see `HANDOFF.md` for the full
+**Known, disclosed limitation** (see `HANDOFF.md` for the full
 investigation): a genuinely novel zero-shot voice clone (never-seen
 reference speaker) is not reliably caught — 4 documented fix attempts,
 consistent with the field's actual open research problem, not a bug
-unique to this project. Noise robustness on the spoof side (Experiment
-C) is a concrete, fixable next step if there's time before the demo.
+unique to this project.
