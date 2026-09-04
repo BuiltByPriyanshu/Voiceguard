@@ -103,15 +103,21 @@ back to §2 and §3.
    `voiceguard_handoff.zip` is in Drive. Mac side: download it, unzip so
    `artifacts/model.pth` and `demo_clips/*.wav` land in the repo root's
    `artifacts/` and `demo_clips/` folders (matching `config.py`'s paths).
-2. **Get an honest unseen-attack EER for the pitch deck.** The numbers
-   currently in `artifacts/metrics.json` (if any) are from the *discarded*
-   third-party-embeddings checkpoint, not the current one — don't quote
-   them. Self-extract the ASVspoof2019 LA **eval** partition (protocol:
-   `LA/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.eval.trl.txt`, audio:
-   `LA/ASVspoof2019_LA_eval/flac`, same dataset as train) using
-   `src/extract_embeddings.py`, then `src/eval_eer_embeddings.py` against
-   the current checkpoint. This partition uses attack algorithms (A07-A19)
-   never seen in training — genuinely unseen, safe to quote to judges.
+2. ~~Get an honest unseen-attack EER for the pitch deck.~~ ✅ Done —
+   **EER 5.72%** (bonafide recall 89.9%, spoof recall 96.8%) on a stratified
+   random 10,000-utterance sample of the ASVspoof2019 LA eval partition
+   (1,032 bonafide / 8,968 spoof, same ratio as the full 71,933-file
+   partition; attacks A07-A19, none seen in training) against the current
+   `artifacts/model.pth`. Recorded in `artifacts/metrics.json`. The old
+   `ASVspoof2021-DF`/`In-the-Wild` entries (23.84% / 22.38%, from the
+   *discarded* third-party-embeddings checkpoint) were removed from
+   `metrics.json` since they don't apply to the current model — don't
+   resurrect them in the pitch deck. Full-eval-set (all 71,933 files) run
+   was skipped as impractical on Mac MPS (~2.5-3hrs); 10k is a large enough
+   sample to be statistically solid and was run via
+   `src/extract_embeddings.py` + `src/eval_eer_embeddings.py`, same
+   pipeline described below, just against a sampled protocol file instead
+   of the full one.
 3. **Smoke-test `backend/app.py`.** Never actually run
    `uvicorn backend.app:app` end to end. Do this before the frontend
    depends on it — `POST /analyze` with a demo clip, then a basic WebSocket

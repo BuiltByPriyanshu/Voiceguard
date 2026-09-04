@@ -8,6 +8,8 @@ librosa
 soundfile
 scikit-learn
 numpy
+pandas             # src/extract_embeddings.py, src/eval_eer_embeddings.py
+pyarrow            # parquet read/write for the above
 fastapi
 uvicorn
 websockets

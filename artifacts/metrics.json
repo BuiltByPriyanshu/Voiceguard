@@ -1,12 +1,10 @@
 {
-  "ASVspoof2021-DF": {
-    "eer": 0.2384289321340282,
-    "eer_pct": 23.84,
-    "n": 138105
-  },
-  "In-the-Wild": {
-    "eer": 0.2238066911226822,
-    "eer_pct": 22.38,
-    "n": 17895
+  "ASVspoof2019-LA-eval-sample10k": {
+    "eer": 0.05718696623308367,
+    "eer_pct": 5.72,
+    "n": 10000,
+    "bonafide_recall": 0.8992,
+    "spoof_recall": 0.9684,
+    "note": "Stratified random 10,000-utterance sample of the ASVspoof2019 LA eval partition (of 71,933 total; 1,032 bonafide / 8,968 spoof, same ratio as the full partition), attack algorithms A07-A19 -- none of these were used in training (train used A01-A06). Evaluated against the current artifacts/model.pth self-trained checkpoint."
   }
 }
