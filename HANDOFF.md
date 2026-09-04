@@ -139,13 +139,35 @@ generalize to an unseen one.
 **This is not a bug to keep chasing blindly** — reliably detecting
 SOTA zero-shot voice cloning across *arbitrary unseen reference
 speakers* is the field's actual open research problem (the build plan
-says as much). Two honest paths forward if this matters for the demo:
-1. Generate several more XTTS clones from several different reference
-   voices (not just one) specifically to build speaker-diversity
-   within the XTTS attack family — the most targeted next step, but
-   still a patch, not a structural fix.
+says as much).
+
+**Tried and didn't work — worth knowing before repeating it:** used
+`tts.speakers` (XTTS-v2's 58 built-in preset voices) to batch-generate
+58 clones locally, no new recordings needed → `artifacts/xtts_diverse_wav2vec.parquet`,
+330 rows. Mixed in at natural weight (not oversampled) alongside
+everything above and retrained. **Result: no improvement on the fresh
+clone (43 vs 44 peak risk, unchanged) and eval EER got slightly worse
+(4.51% → 4.96%).** Reverted this parquet out of the final mix.
+Diagnosis: XTTS's built-in presets are very likely generated through a
+different internal pathway than `speaker_wav` zero-shot cloning (a
+fixed pre-baked speaker bank vs. live conditioning on an arbitrary
+reference recording) — they don't exercise the same "clone an unknown
+voice" artifact space that `speaker_wav=<a real recording>` does, so
+adding them didn't touch the actual gap. **If you want to try this
+again, the fix has to use `speaker_wav` with several different *real*
+reference recordings, not `speaker=<preset name>`.** The parquet file
+is left on disk (`artifacts/xtts_diverse_wav2vec.parquet`, gitignored)
+in case someone wants to re-examine it, but it's not part of the
+current `model.pth`'s training mix.
+
+Two honest paths forward if closing this further matters for the demo:
+1. Get a handful of genuinely different *real* reference recordings
+   (not presets) and clone each via `speaker_wav=` — the untried
+   correct version of the attempt above. Still a patch (more speakers
+   helps, but there's no guarantee of full coverage), not a structural
+   fix.
 2. Disclose it as a known limitation in the pitch: strong on known
-   attacks and a broad diversity of TTS engines (EER 4.51% on unseen
+   attacks and a broad diversity of TTS engines (EER 4.24% on unseen
    ASVspoof attacks); zero-shot cloning of an arbitrary new speaker via
    SOTA engines remains hard — which is honest, not a weakness to hide,
    and matches how the field itself frames the problem.
