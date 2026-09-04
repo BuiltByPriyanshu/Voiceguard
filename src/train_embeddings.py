@@ -20,6 +20,14 @@ import torch
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
 
+MULTI_PARQUET_HELP = (
+    "one or more training embedding parquets (space-separated). Mixing in "
+    "In-the-wild_train_wav2vec.parquet alongside ASVspoof2019_train_wav2vec.parquet "
+    "matters: ASVspoof's bonafide clips are all clean studio recordings, so a "
+    "model trained on ASVspoof alone learns 'genuine = studio-clean' and "
+    "flags real-world genuine speech (like a live demo mic) as suspicious."
+)
+
 from config import (
     LEARNING_RATE, CHECKPOINT_PATH, ARTIFACTS_DIR, SSL_MODEL_NAME, EMBEDDING_DIM,
 )
@@ -67,7 +75,7 @@ def run_epoch(model, loader, device, criterion, optimizer=None, collect=False):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--parquet", required=True, help="training embeddings parquet")
+    parser.add_argument("--parquet", required=True, nargs="+", help=MULTI_PARQUET_HELP)
     parser.add_argument("--val-split", type=float, default=0.1, help="fraction held out for validation")
     parser.add_argument("--in-dim", type=int, default=EMBEDDING_DIM)
     parser.add_argument("--epochs", type=int, default=30)
@@ -78,9 +86,15 @@ def main():
     device = get_device()
     print(f"Training on device: {device}")
 
-    X, y = load_embedding_parquet(args.parquet)
+    X_parts, y_parts = [], []
+    for path in args.parquet:
+        Xi, yi = load_embedding_parquet(path)
+        print(f"  {path}: {Xi.shape[0]} rows, bonafide={int((yi == 0).sum())}, spoof={int((yi == 1).sum())}")
+        X_parts.append(Xi)
+        y_parts.append(yi)
+    X, y = torch.cat(X_parts), torch.cat(y_parts)
     n_bonafide, n_spoof = int((y == 0).sum()), int((y == 1).sum())
-    print(f"Loaded {X.shape[0]} rows, dim={X.shape[1]}, bonafide={n_bonafide}, spoof={n_spoof}")
+    print(f"Loaded {X.shape[0]} rows total, dim={X.shape[1]}, bonafide={n_bonafide}, spoof={n_spoof}")
 
     n = X.shape[0]
     perm = torch.randperm(n)
